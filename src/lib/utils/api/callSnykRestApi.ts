@@ -4,17 +4,17 @@ import { API_BASE } from '../../../app';
 import { refreshTokenReqInterceptor, refreshTokenRespInterceptor } from './interceptors';
 
 /**
- * Utility function to call the Snyk V1 API
+ * Utility function to call the Snyk REST API
  * @param {String} tokenType ex: bearer, token, etc
  * @param {String} token authentication token
+ * @see {@link https://apidocs.snyk.io/ REST API Docs}
  * @returns {AxiosInstance}
- * @see {@link https://snyk.docs.apiary.io/ V1 API Docs}
  */
-export function callSnykApi(tokenType: string, token: string): AxiosInstance {
+export function callSnykRestApi(tokenType: string, token: string): AxiosInstance {
   const axiosInstance = axios.create({
-    baseURL: `${API_BASE}/${API.V1}`,
+    baseURL: `${API_BASE}/${API.REST}`,
     headers: {
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/vnd.api+json',
       Authorization: `${tokenType} ${token}`,
     },
   });

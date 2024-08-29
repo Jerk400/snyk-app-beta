@@ -1,24 +1,24 @@
-import type { AxiosError, AxiosRequestConfig } from 'axios';
-import { AuthData, Envars } from '../../types';
+import axios from 'axios';
+import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { DateTime } from 'luxon';
-import { readFromDb } from '../db';
-import { mostRecent } from '../../controllers/projects/projectsHandlers';
+import { AuthData, Envars } from '../../types';
+import { getMostRecentInstall } from '../authData/getMostRecent';
 import { EncryptDecrypt } from '../encrypt-decrypt';
 import { refreshAuthToken } from '../apiRequests';
 import { updateDb } from '../db';
-import axios from 'axios';
 
 /**
  * An axios interceptor that will refresh the auth token
  * using the refresh token when the auth token expires
- * @param {AxiosRequestConfig} request that can be used in the interceptor
+ * @param {InternalAxiosRequestConfig} request that can be used in the interceptor
  * for conditional checks
  * @returns Axios request interceptor
  */
-export async function refreshTokenReqInterceptor(request: AxiosRequestConfig): Promise<AxiosRequestConfig> {
+export async function refreshTokenReqInterceptor(
+  request: InternalAxiosRequestConfig,
+): Promise<InternalAxiosRequestConfig> {
   // Read the latest data(auth token, refresh token and expiry)
-  const db = await readFromDb();
-  const data = mostRecent(db.installs);
+  const data = await getMostRecentInstall();
   // If no data then continue with the request
   if (!data) return request;
   // Data used to calculate the expiry
@@ -41,10 +41,9 @@ export async function refreshTokenRespInterceptor(error: AxiosError): Promise<Ax
   //  invalidated before it expires, such as the signing key being rotated in an emergency.
   if (status === 401) {
     // Read the latest data(auth token, refresh token and expiry)
-    const db = await readFromDb();
-    const data = mostRecent(db.installs);
-    // If no data then fail the retry
-    if (!data) return Promise.reject(error);
+    const data = await getMostRecentInstall();
+    // If no data or config then fail the retry
+    if (!data || error.config === undefined) return Promise.reject(error);
 
     const newAccessToken = await refreshAndUpdateDb(data);
 
